@@ -1,0 +1,10 @@
+#ifndef _config_hpp_in_
+#define _config_hpp_in_
+
+/* Name of package */
+#define PACKAGE "vzmonitor"
+
+/* Define to the home page for this package. */
+#define PACKAGE_URL "https://github.com/mbehr1/vzmonitor"
+
+#endif /* _config_hpp_in_ */
