@@ -11,7 +11,7 @@ set(vzmonitor_srcs
 )
 
 add_executable(vzmonitor ${vzmonitor_srcs})
-target_link_libraries(vzmonitor ${JSON_LIBRARY} ${MICROHTTPD_LIBRARY} pthread m dl)
+target_link_libraries(vzmonitor ${JSON_LIBRARY} ${MICROHTTPD_LIBRARY} ${GNUTLS_LIBRARIES} pthread m dl)
 
 INSTALL(PROGRAMS
   ${CMAKE_CURRENT_BINARY_DIR}/vzmonitor

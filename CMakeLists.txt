@@ -13,6 +13,7 @@ message("Compiling for target '${TARGET}'")
 
 include( ConfigureMacro )
 
+include( FindGnutls )
 include( FindMicroHttpd )
 if( NOT MICROHTTPD_FOUND )
   message( FATAL_ERROR "libmicrohttpd is required." )
