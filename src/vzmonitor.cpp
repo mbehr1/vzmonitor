@@ -19,6 +19,7 @@
 #include <unistd.h>
 #include <signal.h>
 #include <stdlib.h>
+#include <stdint.h>
 #include <string>
 #include <map>
 
@@ -112,7 +113,7 @@ int answer_to_connection(
 		}else
 			con_info->connectiontype = GET;
 		*con_cls = (void*) con_info;
-		printf("con_cls created!\n");
+		// printf("con_cls created!\n");
 		return MHD_YES;
 	}
 
@@ -123,7 +124,7 @@ int answer_to_connection(
 			std::string s_uuid_inclext (s_uri, 10);
 			unsigned found = s_uuid_inclext.find_last_of(".");
 			std::string s_uuid = s_uuid_inclext.substr(0, found);
-			printf(" adding UUID=%s\n", s_uuid.c_str());
+			// printf(" adding UUID=%s\n", s_uuid.c_str());
 			std::string *&uuid_input = gMapUUIDInput[s_uuid];
 			if (!uuid_input) uuid_input = new std::string();
 
@@ -141,7 +142,7 @@ int answer_to_connection(
 			} // TODO return error
 
 			// POST request done: process data:
-			printf("uuid_input=%s\n", uuid_input ? uuid_input->c_str() : "<null>");
+			//printf("uuid_input=%s\n", uuid_input ? uuid_input->c_str() : "<null>");
 			process_new_input();
 
 			response_code = MHD_HTTP_OK;
