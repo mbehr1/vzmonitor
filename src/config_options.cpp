@@ -1,5 +1,6 @@
 #include <json-c/json.h>
 #include <stdio.h>
+#include <sstream>
 #include "config_options.hpp"
 #include "rules.hpp"
 
@@ -61,9 +62,11 @@ bool parseRules(struct json_object *jo, List_ShPtrRule &rules)
             if (!json_object_object_get_ex(jb, "action", &action))
                 throw "action needed";
 
-            printf(" rule '%s' added:\n", name.c_str());
             Rule *r=new Rule(name, cond, action);
             rules.push_back(std::shared_ptr<Rule> (r));
+            std::ostringstream ss;
+            ss << *r;
+            printf(" rule '%s' added:\n", ss.str().c_str());
         }
     } else {
         printf ("no rules configured\n");
@@ -114,7 +117,7 @@ bool parseConfigFile(const char *fileName, GlobalOptions *&go, MAP_StrStr &chann
             }
             json_object_put(jo);
         } while((jerr = json_tokener_get_error(tok)) == json_tokener_continue);
-        if (tok->char_offset < filedata.length()){
+        if (tok->char_offset < static_cast<int>(filedata.length())){
             printf("error processing config file. Not parsed: %s\n", filedata.substr(tok->char_offset).c_str());
             json_tokener_free(tok);
             return false;

@@ -11,6 +11,7 @@
  - cmdline options
  - daemonize
  - multihost support /hostuuid/add/data... (or oauth,...)
+ - debug problem that first (large) http request misses the last bracket ]
 
 */
 
@@ -110,6 +111,7 @@ int iterate_post (void *coninfo_cls, enum MHD_ValueKind kind, const char *key,
 	struct connection_info_struct *con_info = (struct connection_info_struct *)coninfo_cls;
 	printf("iterate_post: key=%s, filename=%s, content_type=%s, transfer_encoding=%s, size=%d",
 		   key, filename, content_type, transfer_encoding, (int)size);
+	(void) con_info;
 
 	return MHD_YES;
 }
@@ -129,8 +131,8 @@ int answer_to_connection(
 	int response_code = MHD_HTTP_NOT_FOUND;
 	struct MHD_Response *response;
 
-	const char *encoding = MHD_lookup_connection_value(connection, MHD_HEADER_KIND,
-													   MHD_HTTP_HEADER_CONTENT_TYPE);
+//	const char *encoding = MHD_lookup_connection_value(connection, MHD_HEADER_KIND,
+//													   MHD_HTTP_HEADER_CONTENT_TYPE);
 
 //	printf("http request received: method=%s uri=%s encoding = %s upload_data = %p, upload_data_size=%u\n",
 //		   method, uri, encoding ? encoding : "<null>", upload_data, upload_data_size ? *upload_data_size : -1);

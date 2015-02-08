@@ -26,6 +26,19 @@ bool LogicalCondition::evaluate() const
 
     return toRet;
 }
+std::ostream &LogicalCondition::operator<<(std::ostream &os) const
+{
+    os << _opname << std::string(" ( ");
+    auto it = _condlist->cbegin();
+    for (; it!=_condlist->cend(); ++it){
+        os << **it;
+        os << std::string(" ");
+    }
+
+    os << std::string(")");
+    return os;
+}
+
 
 bool UnaryCondition::evaluate() const
 {
@@ -44,6 +57,20 @@ bool UnaryCondition::evaluate() const
     return toRet;
 }
 
+std::ostream &UnaryCondition::operator<<(std::ostream &os) const
+{
+    os << _opname << std::string(" ( ");
+    auto it = _condlist->cbegin();
+    for (; it!=_condlist->cend(); ++it){
+        os << **it;
+        os << std::string(" ");
+    }
+
+    os << std::string(")");
+    return os;
+}
+
+
 bool BinaryComparison::evaluate() const
 {
     double lhs = _lhs->value();
@@ -51,9 +78,28 @@ bool BinaryComparison::evaluate() const
     return _op(lhs, rhs);
 }
 
+std::ostream &BinaryComparison::operator<<(std::ostream &os) const
+{
+    if (!_lhs || !_rhs) return os;
+    os << *_lhs << _opname << *_rhs;
+    return os;
+}
+
+
 double BinaryFct::value() const
 {
     double lhs = _lhs->value();
     double rhs = _rhs->value();
     return _op(lhs, rhs);
 }
+
+std::ostream &operator<<(std::ostream &os, const Condition &c)
+{
+    return c.operator<<(os);
+}
+
+std::ostream &operator<<(std::ostream &os, const Value &v)
+{
+    return v.operator<<(os);
+}
+

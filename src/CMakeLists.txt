@@ -1,6 +1,6 @@
 # -*- mode: cmake; -*-
 
-list( APPEND CMAKE_CXX_FLAGS "-std=c++11" )
+list( APPEND CMAKE_CXX_FLAGS "-std=c++11 -Wall -Werror" )
 
 include_directories(${MICROHTTPD_INCLUDE_DIR})
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})

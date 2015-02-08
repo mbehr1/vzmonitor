@@ -21,6 +21,10 @@ protected:
     std::string _name;
     Condition *_cond;
     Action *_action;
+
+    friend std::ostream &operator<<(std::ostream &os, Rule const &r);
 };
+
+extern std::ostream &operator<<(std::ostream &os, Rule const &r);
 
 #endif

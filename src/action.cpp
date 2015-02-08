@@ -18,3 +18,8 @@ void Action::fire(bool active)
         printf("Action disarmed: '%s'!\n", _cmd.c_str());
 }
 
+std::ostream &operator<<(std::ostream &os, Action const &r)
+{
+    os << std::string("Action '") << r._cmd << std::string("'");
+    return os;
+}

@@ -12,6 +12,7 @@ TEST(ut_rules, generate_cond_const)
 	Condition *cond = generate_condition(jso);
 	json_object_put(jso);
 	ASSERT_TRUE(cond!=0);
+	std::cout << *cond;
 	ASSERT_TRUE(cond->evaluate());
 	delete cond;
 
@@ -31,6 +32,7 @@ TEST(ut_rules, generate_cond_not)
 	Condition *cond = generate_condition(jso);
 	json_object_put(jso);
 	ASSERT_TRUE(cond!=0);
+	std::cout << *cond;
 	ASSERT_FALSE(cond->evaluate());
 	delete cond;
 
@@ -51,6 +53,7 @@ TEST(ut_rules, generate_cond_and)
 	Condition *cond = generate_condition(jso);
 	json_object_put(jso);
 	ASSERT_TRUE(cond!=0);
+	std::cout << *cond;
 	ASSERT_FALSE(cond->evaluate()); // empty AND shall return false
 	delete cond;
 
@@ -58,6 +61,7 @@ TEST(ut_rules, generate_cond_and)
 	cond = generate_condition(jso);
 	json_object_put(jso);
 	ASSERT_TRUE(cond!=0);
+	std::cout << *cond;
 	ASSERT_TRUE(cond->evaluate()); // unary AND -> expression (here true)
 	delete cond;
 
@@ -93,6 +97,7 @@ TEST(ut_rules, generate_cond_and)
 	cond = generate_condition(jso);
 	json_object_put(jso);
 	ASSERT_TRUE(cond!=0);
+	std::cout << *cond;
 	EXPECT_TRUE(cond->evaluate()); // binary AND
 	delete cond;
 
@@ -189,6 +194,7 @@ TEST(ut_rules, generate_cond_gt)
 	cond = generate_condition(jso);
 	json_object_put(jso);
 	ASSERT_TRUE(cond!=0);
+	std::cout << *cond;
 	ASSERT_TRUE(cond->evaluate());
 	delete cond;
 }

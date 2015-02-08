@@ -13,6 +13,10 @@ public:
     virtual void fire(bool active);
 protected:
     std::string _cmd;
+    friend std::ostream &operator<<(std::ostream &os, Action const &r);
 };
+
+extern std::ostream &operator<<(std::ostream &os, Action const &r);
+
 
 #endif

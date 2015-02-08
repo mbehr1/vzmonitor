@@ -43,7 +43,7 @@ Value *generate_value(struct json_object *cond)
 		{
 			const char *str = json_object_get_string(cond);
 			if (!strcmp("NOW", str)){
-				return new NullAryFct(f_now);
+				return new NullAryFct("NOW", f_now);
 			}
 			// lookup alias from channels:
 
@@ -64,7 +64,7 @@ Value *generate_value(struct json_object *cond)
                 generate_values_lhs_rhs(json_object_iter_peek_value(&it), lhs, rhs);
                 json_object_iter_next(&it);
                 if (!json_object_iter_equal(&it, &itEnd)) throw "object contains more than one op/fct!";
-                return new BinaryFct(std::plus<double>(), lhs, rhs );
+                return new BinaryFct("+", std::plus<double>(), lhs, rhs );
             }
             if (!strcmp(key, "LASTTIME")) {
                 // unary functions have just a "variable" (=alias) as parameter:
@@ -72,7 +72,7 @@ Value *generate_value(struct json_object *cond)
                 if (json_object_get_type(param) != json_type_string) throw "generate_value param not a string";
                 json_object_iter_next(&it);
                 if (!json_object_iter_equal(&it, &itEnd)) throw "object contains more than one op/fct!";
-                return new UnaryFct(f_lasttime, json_object_get_string(param));
+                return new UnaryFct("LASTTIME", f_lasttime, json_object_get_string(param));
             }
 
 			printf("generate_value: got unknown fct '%s'\n", key);
@@ -128,40 +128,40 @@ Condition *generate_condition(struct json_object *cond)
             std::list<Condition *> *cond_list=generate_condlist(json_object_iter_peek_value(&it));
             json_object_iter_next(&it);
             if (!json_object_iter_equal(&it, &itEnd)) throw "object contains more than one op/fct!";
-            return new LogicalCondition(std::logical_and<bool>(), cond_list );
+            return new LogicalCondition("AND", std::logical_and<bool>(), cond_list );
         }
         if (!strcmp(key, "OR")) {
             std::list<Condition *> *cond_list=generate_condlist(json_object_iter_peek_value(&it));
             json_object_iter_next(&it);
             if (!json_object_iter_equal(&it, &itEnd)) throw "object contains more than one op/fct!";
-            return new LogicalCondition(std::logical_or<bool>(), cond_list );
+            return new LogicalCondition("OR", std::logical_or<bool>(), cond_list );
         }
         if (!strcmp(key, "NOT")) {
             std::list<Condition *> *cond_list=generate_condlist(json_object_iter_peek_value(&it));
             json_object_iter_next(&it);
             if (!json_object_iter_equal(&it, &itEnd)) throw "object contains more than one op/fct!";
-            return new UnaryCondition(std::logical_not<bool>(), cond_list );
+            return new UnaryCondition("NOT", std::logical_not<bool>(), cond_list );
         }
         if (!strcmp(key, "GT")) {
             Value *lhs, *rhs;
             generate_values_lhs_rhs(json_object_iter_peek_value(&it), lhs, rhs);
             json_object_iter_next(&it);
             if (!json_object_iter_equal(&it, &itEnd)) throw "object contains more than one op/fct!";
-            return new BinaryComparison(std::greater<double>(), lhs, rhs );
+            return new BinaryComparison(">", std::greater<double>(), lhs, rhs );
         }
         if (!strcmp(key, "LTE")) {
             Value *lhs, *rhs;
             generate_values_lhs_rhs(json_object_iter_peek_value(&it), lhs, rhs);
             json_object_iter_next(&it);
             if (!json_object_iter_equal(&it, &itEnd)) throw "object contains more than one op/fct!";
-            return new BinaryComparison(std::less_equal<double>(), lhs, rhs );
+            return new BinaryComparison("<=", std::less_equal<double>(), lhs, rhs );
         }
         if (!strcmp(key, "EQ")) {
             Value *lhs, *rhs;
             generate_values_lhs_rhs(json_object_iter_peek_value(&it), lhs, rhs);
             json_object_iter_next(&it);
             if (!json_object_iter_equal(&it, &itEnd)) throw "object contains more than one op/fct!";
-            return new BinaryComparison(std::equal_to<double>(), lhs, rhs );
+            return new BinaryComparison("==", std::equal_to<double>(), lhs, rhs );
         }
 
 
@@ -182,10 +182,11 @@ Condition *generate_condition(struct json_object *cond)
 }
 
 Rule::Rule(std::string &name, struct json_object *cond, struct json_object *action) :
-    _name(name), _action(0), _cond(0), _last_state(false)
+    _last_state(false), _name(name), _cond(0), _action(0)
 {
     _action = new Action(action);
     _cond = generate_condition(cond);
+    if (!_cond) throw "Rule::Rule no cond!";
 }
 
 void Rule::check()
@@ -195,5 +196,11 @@ void Rule::check()
     if (cond!=_last_state && _action) _action->fire(cond);
     _last_state = cond;
     printf("Rule '%s' %s\n", _name.c_str(), cond ? "true" : "false" );
+}
+
+std::ostream &operator<<(std::ostream &os, Rule const &r)
+{
+    os << std::string("rule '") << r._name << std::string("': ") << *(r._cond) << std::string(" ?-> ") << *(r._action);
+    return os;
 }
 
