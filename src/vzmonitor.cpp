@@ -10,6 +10,7 @@
 /* TODO list
  - cmdline options
  - daemonize
+ - multihost support /hostuuid/add/data... (or oauth,...)
 
 */
 
@@ -20,28 +21,71 @@
 #include <signal.h>
 #include <stdlib.h>
 #include <stdint.h>
+#include <assert.h>
 #include <string>
 #include <map>
+#include <json-c/json.h>
 
 #include <microhttpd.h>
 #include "config.hpp"
 #include "gitSha1.h"
 
+#include "config_options.hpp"
+#include "channel_data.hpp"
+#include "rules.hpp"
+
+GlobalOptions *gGlobalOptions=0;
+MAP_StrStr gChannels;
+List_ShPtrRule gRules;
+MAP_ChannelDataList gChannelData;
+
 typedef std::map<std::string, std::string*> MAP_SSP;
 MAP_SSP gMapUUIDInput;
 
+pthread_mutex_t gChannelDataMutex = PTHREAD_MUTEX_INITIALIZER;
+
 int process_new_input()
 {
+	pthread_mutex_lock(&gChannelDataMutex);
 	for ( MAP_SSP::iterator it=gMapUUIDInput.begin(); it!=gMapUUIDInput.end(); ++it){
-		printf("processing uuid=%s : %s\n", it->first.c_str(), it->second ? it->second->c_str() : "<null>");
+		// printf("processing uuid=%s : %s\n", it->first.c_str(), it->second ? it->second->c_str() : "<null>");
 		std::string *str = it->second;
 		if (str){
 
-
-
+			// if uuid is a known channel?
+			MAP_StrStr::const_iterator git = gChannels.find(it->first);
+			if (git!=gChannels.end()){
+				// add reading! TODO lock access against other threads!
+				LIST_ChannelData &list = gChannelData[git->second];
+				// now treat str as a json str:
+				struct json_object *jo = json_tokener_parse(str->c_str());
+				if (jo) {
+					int nr;
+					if ((nr=json_object_array_length(jo))>=1) {
+						// for each object:
+						printf("process_new_input: adding %d values\n", nr);
+						for (int i = 0; i < nr; i++) {
+							struct json_object *jb = json_object_array_get_idx(jo, i);
+							int nrr = json_object_array_length(jb);
+							if (nrr==2){
+								double t = json_object_get_double(json_object_array_get_idx(jb, 0));
+								double v = json_object_get_double(json_object_array_get_idx(jb, 1));
+								// printf(" adding %f / %f\n", t, v);
+								list.push_back(ChannelData(t,v));
+							} else {
+								printf("reading with %d items ignored!", nrr);
+							}
+						}
+					}
+					json_object_put(jo);
+				} else {
+					printf(" couldn't json parse '%s'\n", str->c_str());
+				}
+			}
 			str->clear();
 		}
 	}
+	pthread_mutex_unlock(&gChannelDataMutex);
 }
 
 const int POSTBUFFERSIZE=256;
@@ -88,8 +132,8 @@ int answer_to_connection(
 	const char *encoding = MHD_lookup_connection_value(connection, MHD_HEADER_KIND,
 													   MHD_HTTP_HEADER_CONTENT_TYPE);
 
-	printf("http request received: method=%s uri=%s encoding = %s upload_data = %p, upload_data_size=%u\n",
-		   method, uri, encoding ? encoding : "<null>", upload_data, upload_data_size ? *upload_data_size : -1);
+//	printf("http request received: method=%s uri=%s encoding = %s upload_data = %p, upload_data_size=%u\n",
+//		   method, uri, encoding ? encoding : "<null>", upload_data, upload_data_size ? *upload_data_size : -1);
 
 
 
@@ -124,7 +168,7 @@ int answer_to_connection(
 			std::string s_uuid_inclext (s_uri, 10);
 			unsigned found = s_uuid_inclext.find_last_of(".");
 			std::string s_uuid = s_uuid_inclext.substr(0, found);
-			// printf(" adding UUID=%s\n", s_uuid.c_str());
+			//printf(" adding UUID=%s\n", s_uuid.c_str());
 			std::string *&uuid_input = gMapUUIDInput[s_uuid];
 			if (!uuid_input) uuid_input = new std::string();
 
@@ -190,7 +234,6 @@ void quit(int sig) {
 int main(int argc, char *argv[]) {
 
 	struct MHD_Daemon *httpd_handle = NULL;
-	int _port=8082; // TODO
 
 	printf("%s version %s\n", PACKAGE, g_GIT_SHALONG);
 
@@ -203,23 +246,49 @@ int main(int argc, char *argv[]) {
 	sigaction(SIGHUP, &action, NULL); // hang up -> could be used to reload config
 	sigaction(SIGTERM, &action, NULL); // kill
 
+	// read options:
+	if (!parseConfigFile("../etc/vzmonitor.conf", gGlobalOptions,
+						 gChannels, gRules)){
+		printf("failed to parse config file /etc/vzmonitor.conf!\n");
+		return 1;
+	}
+	assert(gGlobalOptions);
+
 	// start webserver to listen for data:
 	httpd_handle = MHD_start_daemon( 
 		MHD_USE_SELECT_INTERNALLY, // MHD_USE_THREAD_PER_CONNECTION,
-		_port,
+		gGlobalOptions->_port,
 		NULL, NULL,
 		&answer_to_connection, NULL,
 		MHD_OPTION_NOTIFY_COMPLETED, &request_completed, NULL,
 		MHD_OPTION_END
 		);
 
-	printf("listening on port %d\n", _port);
+	printf("listening on port %d\n", gGlobalOptions->_port);
 
-	while(!gStop) { sleep(1); }
+	while(!gStop) {
+		// check rules
+		pthread_mutex_lock(&gChannelDataMutex);
+
+		List_ShPtrRule::const_iterator it = gRules.cbegin();
+
+		for (; it!=gRules.cend(); ++it){
+			Rule *r = (*it).get();
+			if (r){
+				r->check();
+			}
+		}
+
+		pthread_mutex_unlock(&gChannelDataMutex);
+		// wait a bit:
+		sleep(1);
+	}
 
 	MHD_stop_daemon(httpd_handle);
 
 	printf("stopped listening\n" );
 
+	delete gGlobalOptions;
+	gGlobalOptions = 0;
 	return 0;
 }

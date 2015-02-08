@@ -1,10 +1,19 @@
+list( APPEND CMAKE_CXX_FLAGS "-std=c++11" )
+
 include_directories(
     ${GMOCK_INCLUDE_DIRS}
     ${GTEST_INCLUDE_DIRS}
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src
 )
 
 # all *.cpp files here will be used.
-file(GLOB test_sources *.cpp)
+set(test_sources main.cpp
+  ut_rules.cpp
+  ../src/rules.cpp
+  ../src/action.cpp
+  ../src/condition.cpp
+  ../src/functions.cpp
+)
 
 add_executable(vzmonitor_unit_tests ${test_sources})
 
