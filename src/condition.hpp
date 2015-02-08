@@ -1,6 +1,7 @@
 #ifndef __condition_hpp_
 #define __condition_hpp_
 
+#include <string>
 #include <list>
 #include <functional>
 

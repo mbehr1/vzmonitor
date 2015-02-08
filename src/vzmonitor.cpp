@@ -44,7 +44,7 @@ MAP_SSP gMapUUIDInput;
 
 pthread_mutex_t gChannelDataMutex = PTHREAD_MUTEX_INITIALIZER;
 
-int process_new_input()
+void process_new_input()
 {
 	pthread_mutex_lock(&gChannelDataMutex);
 	for ( MAP_SSP::iterator it=gMapUUIDInput.begin(); it!=gMapUUIDInput.end(); ++it){
@@ -109,7 +109,7 @@ int iterate_post (void *coninfo_cls, enum MHD_ValueKind kind, const char *key,
 {
 	struct connection_info_struct *con_info = (struct connection_info_struct *)coninfo_cls;
 	printf("iterate_post: key=%s, filename=%s, content_type=%s, transfer_encoding=%s, size=%d",
-		   key, filename, content_type, transfer_encoding, size);
+		   key, filename, content_type, transfer_encoding, (int)size);
 
 	return MHD_YES;
 }
