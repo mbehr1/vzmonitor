@@ -127,7 +127,7 @@ int answer_to_connection(
 	void **con_cls
 	)
 {
-	int status;
+	int status = MHD_NO;
 	int response_code = MHD_HTTP_NOT_FOUND;
 	struct MHD_Response *response;
 
