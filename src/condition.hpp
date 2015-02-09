@@ -106,19 +106,33 @@ protected:
     std::string _p1;
 };
 
-
 class BinaryFct : public Value
 {
 public:
     BinaryFct(const char *opname, std::function<double(const double &, const double &)> op,
               Value *lhs, Value *rhs) : _opname(opname), _op(op), _lhs(lhs), _rhs(rhs)  { if (!_lhs || !_rhs) throw "BinaryFct: lhs/rhs missing!";};
     virtual double value() const;
-    virtual ~BinaryFct() {};
+    virtual ~BinaryFct() {if (_lhs) delete _lhs; if (_rhs) delete _rhs;};
     virtual std::ostream &operator<<(std::ostream &os) const {os << std::string("(") << *_lhs << _opname << *_rhs << std::string(")"); return os;};
 protected:
     std::string _opname;
     std::function<double(const double &, const double &)> _op;
     Value *_lhs, *_rhs;
+};
+
+class BinaryChannelFct : public Value
+{
+public:
+    BinaryChannelFct(const char *opname, std::function<double(const std::string &, const double &)> op,
+              const std::string &lhs, const double & rhs) : _opname(opname), _op(op), _lhs(lhs), _rhs(rhs)  { };
+    virtual double value() const {return _op(_lhs, _rhs); };
+    virtual ~BinaryChannelFct() {};
+    virtual std::ostream &operator<<(std::ostream &os) const {os << _opname << std::string("(") << _lhs << std::string(", ") << std::to_string(_rhs) << std::string(")"); return os;};
+protected:
+    std::string _opname;
+    std::function<double(const std::string &, const double &)> _op;
+    std::string _lhs;
+    double _rhs;
 };
 
 class BinaryComparison : public Condition

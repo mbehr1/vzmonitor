@@ -66,7 +66,7 @@ bool parseRules(struct json_object *jo, List_ShPtrRule &rules)
             rules.push_back(std::shared_ptr<Rule> (r));
             std::ostringstream ss;
             ss << *r;
-            printf(" rule '%s' added:\n", ss.str().c_str());
+            printf(" added '%s'\n", ss.str().c_str());
         }
     } else {
         printf ("no rules configured\n");

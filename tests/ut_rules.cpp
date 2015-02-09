@@ -3,6 +3,7 @@
 
 #include "rules.hpp"
 #include "channel_data.hpp"
+#include "functions.hpp"
 
 TEST(ut_rules, generate_cond_const)
 {
@@ -264,6 +265,66 @@ TEST(ut_rules, generate_cond_lasttime)
 	gChannelData["Ch1"].push_back(ChannelData(100, -5.0));
 
 	jso = json_tokener_parse("{\"EQ\":[100, {\"LASTTIME\":\"Ch1\"}]}");
+	cond = generate_condition(jso);
+	json_object_put(jso);
+	ASSERT_TRUE(cond!=0);
+	ASSERT_TRUE(cond->evaluate());
+	delete cond;
+	gChannelData.clear();
+}
+
+TEST(ut_rules, generate_cond_minvalue)
+{
+	struct json_object *jso;
+	Condition *cond;
+
+	jso = json_tokener_parse("{\"EQ\":[-5, {\"MINVALUE\":[\"Ch1\", 10] } ] }");
+	cond = generate_condition(jso);
+	json_object_put(jso);
+	ASSERT_TRUE(cond!=0);
+	ASSERT_FALSE(cond->evaluate());
+
+	double now = f_now();
+
+	gChannelData["Ch1"].push_back(ChannelData(now-4, -5.0));
+
+	jso = json_tokener_parse("{\"EQ\":[-5, {\"MINVALUE\":[\"Ch1\", 10] } ] }");
+	cond = generate_condition(jso);
+	json_object_put(jso);
+	ASSERT_TRUE(cond!=0);
+	ASSERT_TRUE(cond->evaluate());
+	delete cond;
+
+	gChannelData["Ch1"].push_back(ChannelData(now-3, -4.0));
+
+	jso = json_tokener_parse("{\"EQ\":[-5, {\"MINVALUE\":[\"Ch1\", 10] } ] }");
+	cond = generate_condition(jso);
+	json_object_put(jso);
+	ASSERT_TRUE(cond!=0);
+	ASSERT_TRUE(cond->evaluate());
+	delete cond;
+
+	gChannelData["Ch1"].push_back(ChannelData(now-2.5, -6.0));
+
+	jso = json_tokener_parse("{\"EQ\":[-6, {\"MINVALUE\":[\"Ch1\", 10] } ] }");
+	cond = generate_condition(jso);
+	json_object_put(jso);
+	ASSERT_TRUE(cond!=0);
+	ASSERT_TRUE(cond->evaluate());
+	delete cond;
+
+
+	gChannelData.clear();
+}
+
+TEST(ut_rules, generate_cond_avgvalue)
+{
+	struct json_object *jso;
+	Condition *cond;
+
+	gChannelData["Ch1"].push_back(ChannelData(100, -5.0));
+
+	jso = json_tokener_parse("{\"EQ\":[-5, {\"AVGVALUE\":[\"Ch1\", 10] } ] }");
 	cond = generate_condition(jso);
 	json_object_put(jso);
 	ASSERT_TRUE(cond!=0);

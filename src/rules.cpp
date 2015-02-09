@@ -74,6 +74,46 @@ Value *generate_value(struct json_object *cond)
                 if (!json_object_iter_equal(&it, &itEnd)) throw "object contains more than one op/fct!";
                 return new UnaryFct("LASTTIME", f_lasttime, json_object_get_string(param));
             }
+            if (!strcmp(key, "AVGVALUE")) {
+                // binary functions have an array as parameter: here alias, cond for duration
+                struct json_object *param = json_object_iter_peek_value(&it);
+                if (json_object_get_type(param) != json_type_array) throw "generate_value param not an array";
+                json_object_iter_next(&it);
+                if (!json_object_iter_equal(&it, &itEnd)) throw "object contains more than one op/fct!";
+                // parameter 1 alias (string)
+                const char *p1 = json_object_get_string(json_object_array_get_idx(param, 0));
+                json_object *jp2 = json_object_array_get_idx(param, 1);
+                if (!jp2) throw "AVGVALUE: empty p2";
+                double p2;
+                switch (json_object_get_type(jp2)){
+                case json_type_double: p2 = json_object_get_double(jp2); break;
+                case json_type_int: p2 = (double) json_object_get_int(jp2); break;
+                default:
+                    throw "AVGVALUE: wrong p2 type"; break;
+                }
+                if (!p1) throw "parameter for AVGVALUE missing/wrong";
+                return new BinaryChannelFct("AVGVALUE", f_avgvalue, p1, p2);
+            }
+            if (!strcmp(key, "MINVALUE")) {
+                // binary functions have an array as parameter: here alias, cond for duration
+                struct json_object *param = json_object_iter_peek_value(&it);
+                if (json_object_get_type(param) != json_type_array) throw "generate_value param not an array";
+                json_object_iter_next(&it);
+                if (!json_object_iter_equal(&it, &itEnd)) throw "object contains more than one op/fct!";
+                // parameter 1 alias (string)
+                const char *p1 = json_object_get_string(json_object_array_get_idx(param, 0));
+                json_object *jp2 = json_object_array_get_idx(param, 1);
+                if (!jp2) throw "MINVALUE: empty p2";
+                double p2;
+                switch (json_object_get_type(jp2)){
+                case json_type_double: p2 = json_object_get_double(jp2); break;
+                case json_type_int: p2 = (double) json_object_get_int(jp2); break;
+                default:
+                    throw "MINVALUE: wrong p2 type"; break;
+                }
+                if (!p1) throw "parameter for MINVALUE missing/wrong";
+                return new BinaryChannelFct("MINVALUE", f_minvalue, p1, p2);
+            }
 
 			printf("generate_value: got unknown fct '%s'\n", key);
 		}
