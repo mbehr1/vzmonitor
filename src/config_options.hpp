@@ -24,6 +24,7 @@ public:
 
 	int _port; // http port to listen to data for
 	LogVerbosity _verbosity;
+	int _maxChannelDataAge; // ChannelData older than that will be removed (secs)
 };
 
 extern class GlobalOptions *gGlobalOptions;

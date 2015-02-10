@@ -12,7 +12,6 @@
  - daemonize
  - multihost support /hostuuid/add/data... (or oauth,...)
  - debug problem that first (large) http request misses the last bracket ]
- - delete old/unneeded ChannelData
  - webinterface with nice status for each rule
  - real actions
 
@@ -37,6 +36,7 @@
 #include "config_options.hpp"
 #include "channel_data.hpp"
 #include "rules.hpp"
+#include "functions.hpp"
 
 GlobalOptions *gGlobalOptions=0;
 MAP_StrStr gChannels;
@@ -73,6 +73,7 @@ void process_new_input()
 							int nrr = json_object_array_length(jb);
 							if (nrr==2){
 								double t = json_object_get_double(json_object_array_get_idx(jb, 0));
+								t /= 1000; // we keep the time as s,... not ms,...
 								double v = json_object_get_double(json_object_array_get_idx(jb, 1));
 								print(LOG_VERBOSE, " adding %f / %f", t, v);
 								list.push_back(ChannelData(t,v));
@@ -93,6 +94,24 @@ void process_new_input()
 		}
 	}
 	pthread_mutex_unlock(&gChannelDataMutex);
+}
+
+// will be called with gChannelDataMutex hold!
+void removeOldChannelData(const double &minT)
+{
+	// for each channel
+	for (auto cit  = gChannelData.begin(); cit!=gChannelData.end(); ++cit) {
+		LIST_ChannelData &list = (*cit).second;
+		unsigned int i=0;
+		auto it = list.begin();
+		// delete all items from the front until _t>minT
+		while((it!=list.end()) && ((*it)._t < minT)){
+			it = list.erase(it);
+			++i;
+		}
+		if (i)
+			print(LOG_VERBOSE, "removed %d old items", i);
+	}
 }
 
 const int POSTBUFFERSIZE=256;
@@ -272,9 +291,12 @@ int main(int argc, char *argv[]) {
 	print(LOG_INFO, "listening on port %d", gGlobalOptions->_port);
 
 	while(!gStop) {
-		// check rules
 		pthread_mutex_lock(&gChannelDataMutex);
 
+		// remove old data first:
+		removeOldChannelData(f_now()-(gGlobalOptions->_maxChannelDataAge));
+
+		// check rules
 		List_ShPtrRule::const_iterator it = gRules.cbegin();
 
 		for (; it!=gRules.cend(); ++it){
