@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include <json-c/json.h>
 #include <sstream>
 #include "action.hpp"
@@ -18,10 +19,17 @@ void Action::fire(bool active, const Rule *r)
     std::ostringstream ss;
     if (r) ss << *r;
 
-    if (active)
+    if (active) {
         print(LOG_ERROR, "%s -> Action fired: '%s'!", ss.str().c_str(),_cmd.c_str());
-    else
+        std::string cmd = _cmd;
+        cmd.append(" fire");
+        system(cmd.c_str());
+    } else {
         print(LOG_ERROR, "%s -> Action disarmed: '%s'!", ss.str().c_str(), _cmd.c_str());
+        std::string cmd = _cmd;
+        cmd.append(" disarmed");
+        system(cmd.c_str());
+    }
 }
 
 std::ostream &operator<<(std::ostream &os, Action const &r)

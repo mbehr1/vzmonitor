@@ -13,7 +13,6 @@
  - multihost support /hostuuid/add/data... (or oauth,...)
  - debug problem that first (large) http request misses the last bracket ]
  - webinterface with nice status for each rule
- - real actions
 
 */
 
