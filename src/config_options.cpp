@@ -142,7 +142,7 @@ bool parseConfigFile(const char *fileName, GlobalOptions *&go, MAP_StrStr &chann
 }
 
 GlobalOptions::GlobalOptions(json_object *jo) :
-    _port(8082), _verbosity(LOG_ERROR)
+    _port(8082), _verbosity(LOG_WARNING)
 {
     if (!jo) return;
     if (json_object_get_type(jo)!=json_type_object) throw "wrong json type for global";

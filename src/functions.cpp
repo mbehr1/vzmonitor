@@ -23,7 +23,7 @@ double f_lasttime(const std::string &str)
             toRet = d._t;
         }
     } else {
-        print(LOG_WARNING, " LASTTIME didn't found any data!");
+        print(LOG_INFO, " LASTTIME didn't found any data!");
     }
     print(LOG_VERBOSE, "LASTTIME (%s)=%f", str.c_str(), toRet);
     return toRet;
@@ -51,7 +51,7 @@ double f_avgvalue(const std::string &str, const double &v)
             }
         }
     } else {
-        print(LOG_WARNING, " AVGVALUE didn't found any data!");
+        print(LOG_INFO, " AVGVALUE didn't found any data!");
     }
 
 
@@ -84,7 +84,7 @@ double f_minvalue(const std::string &str, const double &v)
             }
         }
     } else {
-        print(LOG_WARNING, " MINVALUE didn't found any data!");
+        print(LOG_INFO, " MINVALUE didn't found any data!");
     }
 
 

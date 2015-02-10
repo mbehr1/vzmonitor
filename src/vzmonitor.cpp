@@ -83,7 +83,10 @@ void process_new_input()
 					}
 					json_object_put(jo);
 				} else {
-					print(LOG_WARNING, " couldn't json parse '%s'", str->c_str());
+					if (str->length())
+						print(LOG_WARNING, " couldn't json parse '%s'", str->c_str());
+					else
+						print(LOG_DEBUG, " couldn't json parse '%s'", str->c_str());
 				}
 			}
 			str->clear();
