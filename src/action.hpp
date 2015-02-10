@@ -4,13 +4,14 @@
 #include <string>
 
 struct json_object;
+class Rule;
 
 class Action
 {
 public:
     Action(struct json_object *jo);
     virtual ~Action(){};
-    virtual void fire(bool active);
+    virtual void fire(bool active, const Rule *r);
 protected:
     std::string _cmd;
     friend std::ostream &operator<<(std::ostream &os, Action const &r);

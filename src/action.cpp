@@ -1,6 +1,9 @@
 #include <stdio.h>
 #include <json-c/json.h>
+#include <sstream>
 #include "action.hpp"
+#include "config_options.hpp"
+#include "rules.hpp"
 
 Action::Action(struct json_object *jo)
 {
@@ -10,12 +13,15 @@ Action::Action(struct json_object *jo)
     _cmd = json_object_get_string(jo);
 }
 
-void Action::fire(bool active)
+void Action::fire(bool active, const Rule *r)
 {
+    std::ostringstream ss;
+    if (r) ss << *r;
+
     if (active)
-        printf("Action fired: '%s'!\n", _cmd.c_str());
+        print(LOG_ERROR, "%s -> Action fired: '%s'!", ss.str().c_str(),_cmd.c_str());
     else
-        printf("Action disarmed: '%s'!\n", _cmd.c_str());
+        print(LOG_ERROR, "%s -> Action disarmed: '%s'!", ss.str().c_str(), _cmd.c_str());
 }
 
 std::ostream &operator<<(std::ostream &os, Action const &r)

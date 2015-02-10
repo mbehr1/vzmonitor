@@ -4,6 +4,9 @@
 #include "rules.hpp"
 #include "channel_data.hpp"
 #include "functions.hpp"
+#include "config_options.hpp"
+
+GlobalOptions *gGlobalOptions=0;
 
 TEST(ut_rules, generate_cond_const)
 {

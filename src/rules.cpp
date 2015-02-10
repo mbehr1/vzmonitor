@@ -5,6 +5,7 @@
 #include "rules.hpp"
 #include "condition.hpp"
 #include "functions.hpp"
+#include "config_options.hpp"
 
 void generate_values_lhs_rhs(struct json_object *cond, Value *&lhs, Value *&rhs);
 
@@ -47,7 +48,7 @@ Value *generate_value(struct json_object *cond)
 			}
 			// lookup alias from channels:
 
-			printf("generate_value: unknown fct/alias: '%s'\n", str);
+			print(LOG_ERROR, "generate_value: unknown fct/alias: '%s'", str);
 			// return 0 throw "generate_value: unknown fct/alias";
 		}
 		break;
@@ -115,7 +116,7 @@ Value *generate_value(struct json_object *cond)
                 return new BinaryChannelFct("MINVALUE", f_minvalue, p1, p2);
             }
 
-			printf("generate_value: got unknown fct '%s'\n", key);
+			print(LOG_ERROR, "generate_value: got unknown fct '%s'", key);
 		}
 		break;
 		default:
@@ -123,7 +124,7 @@ Value *generate_value(struct json_object *cond)
 			break;
 		}
 	} catch (const char *err) {
-		printf("generate_value: exc %s!\n", err);
+		print(LOG_ERROR, "generate_value: exc %s!", err);
 		throw;
 	}
 
@@ -205,7 +206,7 @@ Condition *generate_condition(struct json_object *cond)
         }
 
 
-        printf("got unknown op/fct '%s'\n", key);
+        print(LOG_ERROR, "got unknown op/fct '%s'", key);
 
     }
     break;
@@ -214,7 +215,7 @@ Condition *generate_condition(struct json_object *cond)
         break;
     }
     } catch (const char *err) {
-        printf("generate_condition: exc %s!\n", err);
+        print(LOG_ERROR, "generate_condition: exc %s!", err);
         throw;
     }
 
@@ -233,9 +234,9 @@ void Rule::check()
 {
     bool cond=false;
     if (_cond) cond = _cond->evaluate();
-    if (cond!=_last_state && _action) _action->fire(cond);
+    if (cond!=_last_state && _action) _action->fire(cond, this);
     _last_state = cond;
-    printf("Rule '%s' %s\n", _name.c_str(), cond ? "true" : "false" );
+    print(LOG_VERBOSE, "Rule '%s' %s", _name.c_str(), cond ? "true" : "false" );
 }
 
 std::ostream &operator<<(std::ostream &os, Rule const &r)

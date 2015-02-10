@@ -13,6 +13,7 @@ set(test_sources main.cpp
   ../src/action.cpp
   ../src/condition.cpp
   ../src/functions.cpp
+  ../src/config_options.cpp
 )
 
 add_executable(vzmonitor_unit_tests ${test_sources})

@@ -52,7 +52,7 @@ void process_new_input()
 {
 	pthread_mutex_lock(&gChannelDataMutex);
 	for ( MAP_SSP::iterator it=gMapUUIDInput.begin(); it!=gMapUUIDInput.end(); ++it){
-		// printf("processing uuid=%s : %s\n", it->first.c_str(), it->second ? it->second->c_str() : "<null>");
+		print(LOG_DEBUG, "processing uuid=%s : %s", it->first.c_str(), it->second ? it->second->c_str() : "<null>");
 		std::string *str = it->second;
 		if (str){
 
@@ -67,23 +67,23 @@ void process_new_input()
 					int nr;
 					if ((nr=json_object_array_length(jo))>=1) {
 						// for each object:
-						printf("process_new_input: adding %d values\n", nr);
+						print(LOG_DEBUG, "process_new_input: adding %d values", nr);
 						for (int i = 0; i < nr; i++) {
 							struct json_object *jb = json_object_array_get_idx(jo, i);
 							int nrr = json_object_array_length(jb);
 							if (nrr==2){
 								double t = json_object_get_double(json_object_array_get_idx(jb, 0));
 								double v = json_object_get_double(json_object_array_get_idx(jb, 1));
-								// printf(" adding %f / %f\n", t, v);
+								print(LOG_VERBOSE, " adding %f / %f", t, v);
 								list.push_back(ChannelData(t,v));
 							} else {
-								printf("reading with %d items ignored!", nrr);
+								print(LOG_WARNING, "reading with %d items ignored!", nrr);
 							}
 						}
 					}
 					json_object_put(jo);
 				} else {
-					printf(" couldn't json parse '%s'\n", str->c_str());
+					print(LOG_WARNING, " couldn't json parse '%s'", str->c_str());
 				}
 			}
 			str->clear();
@@ -112,7 +112,7 @@ int iterate_post (void *coninfo_cls, enum MHD_ValueKind kind, const char *key,
 				  uint64_t off, size_t size)
 {
 	struct connection_info_struct *con_info = (struct connection_info_struct *)coninfo_cls;
-	printf("iterate_post: key=%s, filename=%s, content_type=%s, transfer_encoding=%s, size=%d",
+	print(LOG_ERROR, "iterate_post: key=%s, filename=%s, content_type=%s, transfer_encoding=%s, size=%d",
 		   key, filename, content_type, transfer_encoding, (int)size);
 	(void) con_info;
 
@@ -134,11 +134,11 @@ int answer_to_connection(
 	int response_code = MHD_HTTP_NOT_FOUND;
 	struct MHD_Response *response;
 
-//	const char *encoding = MHD_lookup_connection_value(connection, MHD_HEADER_KIND,
-//													   MHD_HTTP_HEADER_CONTENT_TYPE);
+	const char *encoding = MHD_lookup_connection_value(connection, MHD_HEADER_KIND,
+													   MHD_HTTP_HEADER_CONTENT_TYPE);
 
-//	printf("http request received: method=%s uri=%s encoding = %s upload_data = %p, upload_data_size=%u\n",
-//		   method, uri, encoding ? encoding : "<null>", upload_data, upload_data_size ? *upload_data_size : -1);
+	print(LOG_DEBUG, "http request received: method=%s uri=%s encoding = %s upload_data = %p, upload_data_size=%u",
+		   method, uri, encoding ? encoding : "<null>", upload_data, upload_data_size ? *upload_data_size : -1);
 
 
 
@@ -162,7 +162,6 @@ int answer_to_connection(
 		}else
 			con_info->connectiontype = GET;
 		*con_cls = (void*) con_info;
-		// printf("con_cls created!\n");
 		return MHD_YES;
 	}
 
@@ -173,7 +172,7 @@ int answer_to_connection(
 			std::string s_uuid_inclext (s_uri, 10);
 			unsigned found = s_uuid_inclext.find_last_of(".");
 			std::string s_uuid = s_uuid_inclext.substr(0, found);
-			//printf(" adding UUID=%s\n", s_uuid.c_str());
+			print(LOG_VERBOSE, " adding UUID=%s", s_uuid.c_str());
 			std::string *&uuid_input = gMapUUIDInput[s_uuid];
 			if (!uuid_input) uuid_input = new std::string();
 
@@ -183,7 +182,6 @@ int answer_to_connection(
 					MHD_post_process( con_info->postprocessor, upload_data, *upload_data_size);
 				else {
 					// we process the data on our own!
-					//printf("upload_data=%s\n", upload_data);
 					uuid_input->append(upload_data, *upload_data_size);
 				}
 				*upload_data_size = 0;
@@ -191,7 +189,6 @@ int answer_to_connection(
 			} // TODO return error
 
 			// POST request done: process data:
-			//printf("uuid_input=%s\n", uuid_input ? uuid_input->c_str() : "<null>");
 			process_new_input();
 
 			response_code = MHD_HTTP_OK;
@@ -220,7 +217,7 @@ void request_completed(void *cls, struct MHD_Connection *connection,
 	struct connection_info_struct *con_info = (struct connection_info_struct *)*con_cls;
 	if (NULL == con_info) return;
 	if (con_info->connectiontype == POST) {
-		printf( " POST request completed\n");
+		print(LOG_VERBOSE, " POST request completed");
 
 		if (con_info->postprocessor)
 			MHD_destroy_post_processor( con_info->postprocessor );
@@ -240,7 +237,7 @@ int main(int argc, char *argv[]) {
 
 	struct MHD_Daemon *httpd_handle = NULL;
 
-	printf("%s version %s\n", PACKAGE, g_GIT_SHALONG);
+	print(LOG_ERROR, "%s version %s", PACKAGE, g_GIT_SHALONG);
 
 	// install signal handler
 	struct sigaction action;
@@ -254,7 +251,7 @@ int main(int argc, char *argv[]) {
 	// read options:
 	if (!parseConfigFile("../etc/vzmonitor.conf", gGlobalOptions,
 						 gChannels, gRules)){
-		printf("failed to parse config file /etc/vzmonitor.conf!\n");
+		print(LOG_ERROR, "failed to parse config file /etc/vzmonitor.conf!");
 		return 1;
 	}
 	assert(gGlobalOptions);
@@ -269,7 +266,7 @@ int main(int argc, char *argv[]) {
 		MHD_OPTION_END
 		);
 
-	printf("listening on port %d\n", gGlobalOptions->_port);
+	print(LOG_INFO, "listening on port %d", gGlobalOptions->_port);
 
 	while(!gStop) {
 		// check rules
@@ -291,7 +288,7 @@ int main(int argc, char *argv[]) {
 
 	MHD_stop_daemon(httpd_handle);
 
-	printf("stopped listening\n" );
+	print(LOG_INFO, "stopped listening" );
 
 	delete gGlobalOptions;
 	gGlobalOptions = 0;

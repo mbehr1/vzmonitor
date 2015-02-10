@@ -12,8 +12,9 @@ enum LogVerbosity {
 	LOG_NONE=0,
 	LOG_ERROR=5,
 	LOG_WARNING=10,
-	LOG_VERBOSE=15,
-	LOG_INFO=20
+	LOG_INFO=15,
+	LOG_DEBUG=20,
+	LOG_VERBOSE=25
 };
 
 class GlobalOptions {
@@ -32,5 +33,7 @@ class Rule;
 typedef std::list<std::shared_ptr<Rule>> List_ShPtrRule;
 
 bool parseConfigFile(const char *fileName, GlobalOptions *&go, MAP_StrStr &channels, List_ShPtrRule &rules); // creates object if go NULL
+
+void print(const LogVerbosity &level, const char *format, ... );
 
 #endif

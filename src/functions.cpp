@@ -2,6 +2,7 @@
 #include <cmath>
 #include "functions.hpp"
 #include "channel_data.hpp"
+#include "config_options.hpp"
 
 double f_now()
 {
@@ -22,9 +23,9 @@ double f_lasttime(const std::string &str)
             toRet = d._t;
         }
     } else {
-        printf(" LASTTIME didn't found any data!\n");
+        print(LOG_WARNING, " LASTTIME didn't found any data!");
     }
-    printf("LASTTIME (%s)=%f\n", str.c_str(), toRet);
+    print(LOG_VERBOSE, "LASTTIME (%s)=%f", str.c_str(), toRet);
     return toRet;
 }
 
@@ -50,11 +51,11 @@ double f_avgvalue(const std::string &str, const double &v)
             }
         }
     } else {
-        printf(" AVGVALUE didn't found any data!\n");
+        print(LOG_WARNING, " AVGVALUE didn't found any data!");
     }
 
 
-    printf("AVGVALUE(%s, %f)=%f\n", str.c_str(), v, toRet);
+    print(LOG_ERROR, "AVGVALUE(%s, %f)=%f", str.c_str(), v, toRet); // TODO error only until implemented!
     return toRet;
 }
 
@@ -83,10 +84,10 @@ double f_minvalue(const std::string &str, const double &v)
             }
         }
     } else {
-        printf(" MINVALUE didn't found any data!\n");
+        print(LOG_WARNING, " MINVALUE didn't found any data!");
     }
 
 
-    printf("MINVALUE(%s, %f)=%f\n", str.c_str(), v, toRet);
+    print(LOG_VERBOSE, "MINVALUE(%s, %f)=%f", str.c_str(), v, toRet);
     return toRet;
 }

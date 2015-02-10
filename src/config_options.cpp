@@ -1,6 +1,9 @@
 #include <json-c/json.h>
 #include <stdio.h>
+#include <stdarg.h>
 #include <sstream>
+#include <sys/time.h>
+#include <unistd.h>
 #include "config_options.hpp"
 #include "rules.hpp"
 
@@ -27,11 +30,11 @@ bool parseChannels(struct json_object *jo, MAP_StrStr &channels)
             } else {
                 alias = uuid; // using uuid as alias
             }
-            printf(" channel: %s = %s\n", uuid.c_str(), alias.c_str());
+            print(LOG_INFO, " channel: %s = %s", uuid.c_str(), alias.c_str());
             channels[uuid] = alias;
         }
     } else {
-        printf ("no channels configured\n");
+        print (LOG_WARNING, "no channels configured");
         return false;
     }
 
@@ -66,10 +69,10 @@ bool parseRules(struct json_object *jo, List_ShPtrRule &rules)
             rules.push_back(std::shared_ptr<Rule> (r));
             std::ostringstream ss;
             ss << *r;
-            printf(" added '%s'\n", ss.str().c_str());
+            print(LOG_INFO, " added '%s'", ss.str().c_str());
         }
     } else {
-        printf ("no rules configured\n");
+        print(LOG_WARNING, "no rules configured");
         return false;
     }
 
@@ -81,7 +84,7 @@ bool parseConfigFile(const char *fileName, GlobalOptions *&go, MAP_StrStr &chann
     // parse file
     FILE *file = fopen(fileName, "r");
     if (file){
-        printf("opened config file\n");
+        print(LOG_VERBOSE, "opened config file");
         std::string filedata;
         char buf[1024];
         while(fgets(buf, sizeof(buf), file)){
@@ -94,7 +97,6 @@ bool parseConfigFile(const char *fileName, GlobalOptions *&go, MAP_StrStr &chann
         do{
             json_object *jo = json_tokener_parse_ex(tok, filedata.c_str(), filedata.length());
             if (jo) {
-                printf("processing jo\n");
                 struct json_object *value;
                 if (json_object_object_get_ex(jo, "global", &value)) {
                     if (go) delete go;
@@ -102,36 +104,36 @@ bool parseConfigFile(const char *fileName, GlobalOptions *&go, MAP_StrStr &chann
                 }
                 if (json_object_object_get_ex(jo, "channels", &value)) {
                     if (!parseChannels(value, channels)){
-                        printf("error parsing channels!\n");
+                        print(LOG_ERROR, "error parsing channels!");
                         return false;
                     }
                 }
                 if (json_object_object_get_ex(jo, "rules", &value)) {
                     if (!parseRules(value, rules)) {
-                        printf("error parsing rules!\n");
+                        print(LOG_ERROR, "error parsing rules!");
                         return false;
                     }
                 }
             } else {
-                printf("no jo!\n");
+                print(LOG_ERROR, "parseConfigFile, no jo!");
             }
             json_object_put(jo);
         } while((jerr = json_tokener_get_error(tok)) == json_tokener_continue);
         if (tok->char_offset < static_cast<int>(filedata.length())){
-            printf("error processing config file. Not parsed: %s\n", filedata.substr(tok->char_offset).c_str());
+            print(LOG_ERROR, "error processing config file. Not parsed: %s", filedata.substr(tok->char_offset).c_str());
             json_tokener_free(tok);
             return false;
         }
         json_tokener_free(tok);
         if (jerr != json_tokener_success) {
-            printf("error parsing config file: %s\n", json_tokener_error_desc(jerr));
+            print(LOG_ERROR, "error parsing config file: %s", json_tokener_error_desc(jerr));
             return false;
         }
 
         // create GlobalOptions with given json object
 
     } else {
-        printf("failed to open %s\n", fileName);
+        print(LOG_ERROR, "failed to open %s", fileName);
     }
     // if no go exists yet (e.g. empty config file) create from default:
     if (!go) go=new GlobalOptions();
@@ -147,12 +149,52 @@ GlobalOptions::GlobalOptions(json_object *jo) :
     struct json_object *value;
     if (json_object_object_get_ex(jo, "port", &value)) {
         _port = json_object_get_int(value);
-        printf("GlobalOptions: port %d\n", _port);
+        print(LOG_VERBOSE, "GlobalOptions: port %d", _port);
     } // else stay with default
 
     if (json_object_object_get_ex(jo, "verbosity", &value)) {
         _verbosity = (LogVerbosity) json_object_get_int(value);
-        printf("GlobalOptions: verbosity %d\n", _verbosity);
+        print(LOG_VERBOSE, "GlobalOptions: verbosity %d", _verbosity);
     } // else stay with default
 
 }
+
+void print(const LogVerbosity &level, const char *format,... ) {
+	if (level > (gGlobalOptions ? gGlobalOptions->_verbosity : LOG_WARNING)) {
+		return; /* skip message if its under the verbosity level */
+	}
+
+	struct timeval now;
+	struct tm * timeinfo;
+	char prefix[24];
+	size_t pos = 0;
+
+	gettimeofday(&now, NULL);
+	timeinfo = localtime(&now.tv_sec);
+
+	/* format timestamp */
+	pos += strftime(prefix+pos, 18, "[%b %d %H:%M:%S]", timeinfo);
+
+	va_list args;
+	va_start(args, format);
+	/* print to stdout/stderr */
+	if (getppid() != 1) { /* running as fork in background? */
+		FILE *stream = (level > 0) ? stdout : stderr;
+
+		fprintf(stream, "%-24s", prefix);
+		vfprintf(stream, format, args);
+		fprintf(stream, "\n");
+	}
+	va_end(args);
+
+	va_start(args, format);
+	// append to logfile
+/*	if (options.logfd()) {
+		fprintf(options.logfd(), "%-24s", prefix);
+		vfprintf(options.logfd(), format, args);
+		fprintf(options.logfd(), "\n");
+		fflush(options.logfd());
+	} */
+	va_end(args);
+}
+
