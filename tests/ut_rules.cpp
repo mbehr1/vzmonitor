@@ -332,7 +332,7 @@ TEST(ut_rules, generate_function_avgvalue)
 	gChannelData["Ch1"].push_back(ChannelData(now-10, -5.0));
 
 	// one data item: return this as avg
-	v = f_avgvalue("Ch1", 10);
+	v = f_avgvalue("Ch1", 11);
 	ASSERT_EQ(v, -5.0);
 
 	v = f_avgvalue("Ch1", 5); // even if not inside the window anymore
@@ -351,6 +351,37 @@ TEST(ut_rules, generate_function_avgvalue)
 	double expected = ((-5*4)+(0*5))/9.0;
 
 	ASSERT_TRUE(fabs(v-expected)<0.001) << expected;
+
+	gChannelData.clear();
+}
+
+TEST(ut_rules, generate_function_maxvalue)
+{
+	// if no data, maxvalue = NAN?
+	double v = f_maxvalue("Ch1", 10);
+	ASSERT_TRUE(isnan(v));
+
+	double now = f_now(); // TODO the f_now() should use a constant value and not the real one to keep it constant between calls in one rule
+
+	gChannelData["Ch1"].push_back(ChannelData(now-10, -5.0));
+
+	// one data item: return this as max (even if outside the window)
+	v = f_maxvalue("Ch1", 11);
+	ASSERT_EQ(v, -5.0);
+
+	v = f_maxvalue("Ch1", 5); // even if not inside the window anymore
+	ASSERT_EQ(v, -5.0);
+
+	// two data items, same distance (5s -5, 5s 0, but window bigger (so before first data item) -> -10/3
+	gChannelData["Ch1"].push_back(ChannelData(now-5, -6.0));
+
+	v = f_maxvalue("Ch1", 15);
+
+	ASSERT_EQ(v, -5.0);
+
+	v = f_maxvalue("Ch1", 6);
+
+	ASSERT_EQ(v, -6.0);
 
 	gChannelData.clear();
 }

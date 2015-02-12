@@ -112,3 +112,36 @@ double f_minvalue(const std::string &str, const double &v)
     print(LOG_VERBOSE, "MINVALUE(%s, %f)=%f", str.c_str(), v, toRet);
     return toRet;
 }
+
+double f_maxvalue(const std::string &str, const double &v)
+{
+	double toRet = NAN;
+
+	// now determine max of channel value from the last v seconds:
+	MAP_ChannelDataList::const_iterator it = gChannelData.find(str);
+	if (it != gChannelData.end()){
+		const LIST_ChannelData &list = it->second;
+		if (list.size()){
+			const ChannelData &d = list.back();
+			// first value:
+			toRet = d._v;
+			double now = f_now();
+			double startT = now - v;
+			if (d._t>startT) {
+				// we need more values:
+				auto cit = list.crbegin();
+				for (++cit; cit!= list.crend(); ++cit){ // skip the first(last) value
+					const ChannelData &d2 = *cit;
+					if (d2._t<startT) break;
+					if (d2._v > toRet) toRet = d2._v;
+				}
+			}
+		}
+	} else {
+		print(LOG_INFO, " MAXVALUE didn't found any data!");
+	}
+
+
+	print(LOG_VERBOSE, "MAXVALUE(%s, %f)=%f", str.c_str(), v, toRet);
+	return toRet;
+}
