@@ -32,30 +32,51 @@ double f_lasttime(const std::string &str)
 double f_avgvalue(const std::string &str, const double &v)
 {
     double toRet = NAN;
+	if (v<=0.0) return toRet;
 
     double lastT = -1;
     // now determine avg of channel value from the last v seconds:
     MAP_ChannelDataList::const_iterator it = gChannelData.find(str);
     if (it != gChannelData.end()){
         const LIST_ChannelData &list = it->second;
-        if (list.size()){
-            const ChannelData &d = list.back();
-            // first value:
-            toRet = d._v;
-            lastT = d._t;
+		if (list.size()>1){
             double now = f_now();
             double startT = now - v;
-            if (lastT>startT) {
-                // we need more values and we can't expect aequidistance!
-                // TODO!
-            }
-        }
+			double lastV=0.0;
+			lastT = now;
+			toRet = 0;
+			auto dit = list.crbegin();
+			while (dit != list.crend()) {
+				const double &t = (*dit)._t;
+				if (t>startT) {
+					// average with lastT-t share:
+					lastV = (*dit)._v;
+					toRet += (lastT-t)*lastV;
+					lastT = t;
+				} else { // t<=startT:
+					// average with lastT-startT share:
+					toRet += (lastT-startT)*((*dit)._v);
+					lastT = startT;
+					break;
+				}
+				++dit;
+			}
+			if (lastT > startT){
+				// some data missing. fill with lastV;
+				toRet += (lastT - startT) * lastV;
+			}
+			toRet /= v;
+		} else if (list.size()==1) {
+			const ChannelData &d = list.back();
+			// first value as avg (we assume no difference from previous value:
+			toRet = d._v;
+		}
     } else {
         print(LOG_INFO, " AVGVALUE didn't found any data!");
     }
 
 
-    print(LOG_ERROR, "AVGVALUE(%s, %f)=%f", str.c_str(), v, toRet); // TODO error only until implemented!
+	print(LOG_VERBOSE, "AVGVALUE(%s, %f)=%f", str.c_str(), v, toRet);
     return toRet;
 }
 

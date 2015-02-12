@@ -1,4 +1,5 @@
 #include <json-c/json.h>
+#include <cmath>
 #include "gtest/gtest.h"
 
 #include "rules.hpp"
@@ -320,18 +321,36 @@ TEST(ut_rules, generate_cond_minvalue)
 	gChannelData.clear();
 }
 
-TEST(ut_rules, generate_cond_avgvalue)
+TEST(ut_rules, generate_function_avgvalue)
 {
-	struct json_object *jso;
-	Condition *cond;
+	// if no data, avgvalue = NAN?
+	double v = f_avgvalue("Ch1", 10);
+	ASSERT_TRUE(isnan(v));
 
-	gChannelData["Ch1"].push_back(ChannelData(100, -5.0));
+	double now = f_now(); // TODO the f_now() should use a constant value and not the real one to keep it constant between calls in one rule
 
-	jso = json_tokener_parse("{\"EQ\":[-5, {\"AVGVALUE\":[\"Ch1\", 10] } ] }");
-	cond = generate_condition(jso);
-	json_object_put(jso);
-	ASSERT_TRUE(cond!=0);
-	ASSERT_TRUE(cond->evaluate());
-	delete cond;
+	gChannelData["Ch1"].push_back(ChannelData(now-10, -5.0));
+
+	// one data item: return this as avg
+	v = f_avgvalue("Ch1", 10);
+	ASSERT_EQ(v, -5.0);
+
+	v = f_avgvalue("Ch1", 5); // even if not inside the window anymore
+	ASSERT_EQ(v, -5.0);
+
+	// two data items, same distance (5s -5, 5s 0, but window bigger (so before first data item) -> -10/3
+	gChannelData["Ch1"].push_back(ChannelData(now-5, 0.0));
+
+	v = f_avgvalue("Ch1", 15);
+
+	ASSERT_TRUE(fabs(v+(10/3.0))<0.0001);
+
+	// two data items, same distance but one out of averaging window (4s -5, 5s 0 -> -2.2
+
+	v = f_avgvalue("Ch1", 9);
+	double expected = ((-5*4)+(0*5))/9.0;
+
+	ASSERT_TRUE(fabs(v-expected)<0.001) << expected;
+
 	gChannelData.clear();
 }
