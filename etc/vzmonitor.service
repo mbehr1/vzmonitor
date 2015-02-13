@@ -1,0 +1,13 @@
+[Unit]
+Description=vzmonitor
+After=syslog.target network.target
+
+[Service]
+User=1000
+ExecStart=/usr/local/bin/vzmonitor -c /etc/vzmonitor.conf
+StandardOutput=syslog
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target
+
