@@ -8,7 +8,6 @@
  */
 
 /* TODO list
- - cmdline options
  - daemonize
  - multihost support /hostuuid/add/data... (or oauth,...)
  - debug problem that first (large) http request misses the last bracket ]
@@ -254,9 +253,42 @@ void quit(int sig) {
 	gStop = true;
 }
 
+void show_usage(char *argv[]) {
+
+	printf("Usage: %s [options]\n\n", argv[0]);
+
+	printf("  following options are available:\n");
+	printf("\t-%c \t%s\n", 'V', "show version");
+	printf("\t-%c \t%s\n", 'c', "set config file");
+
+	printf("\n%s - volkszaehler.org monitoring utility\n", PACKAGE);
+	printf("by Matthias Behr <mbehr ( at ) mcbehr.de>\n");
+}
+
+
 int main(int argc, char *argv[]) {
 
 	struct MHD_Daemon *httpd_handle = NULL;
+	std::string config_file ("../etc/vzmonitor.conf");
+
+	int c;
+	while ( (c = getopt(argc, argv, "c:hV"))!=-1) {
+		switch (c) {
+		case 'V':
+			printf("%s version %s\n", PACKAGE, g_GIT_SHALONG);
+			return 0;
+		break;
+		case 'c': /* config file */
+			config_file = optarg;
+		break;
+		case '?':
+		case 'h':
+		default:
+			show_usage(argv);
+			return 0;
+		}
+	}
+
 
 	print(LOG_ERROR, "%s version %s", PACKAGE, g_GIT_SHALONG);
 
@@ -270,7 +302,7 @@ int main(int argc, char *argv[]) {
 	sigaction(SIGTERM, &action, NULL); // kill
 
 	// read options:
-	if (!parseConfigFile("../etc/vzmonitor.conf", gGlobalOptions,
+	if (!parseConfigFile(config_file.c_str(), gGlobalOptions,
 						 gChannels, gRules)){
 		print(LOG_ERROR, "failed to parse config file /etc/vzmonitor.conf!");
 		return 1;
