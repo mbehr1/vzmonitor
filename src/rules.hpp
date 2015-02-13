@@ -22,6 +22,7 @@ protected:
     Condition *_cond;
     Action *_action;
 
+	friend class Action;
     friend std::ostream &operator<<(std::ostream &os, Rule const &r);
 };
 
