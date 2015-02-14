@@ -142,7 +142,7 @@ bool parseConfigFile(const char *fileName, GlobalOptions *&go, MAP_StrStr &chann
 }
 
 GlobalOptions::GlobalOptions(json_object *jo) :
-    _port(8082), _verbosity(LOG_WARNING), _maxChannelDataAge(60*60)
+	_port(8082), _verbosity(LOG_WARNING), _maxChannelDataAge(60*60), _initialDelay(15)
 {
     if (!jo) return;
     if (json_object_get_type(jo)!=json_type_object) throw "wrong json type for global";
@@ -161,6 +161,11 @@ GlobalOptions::GlobalOptions(json_object *jo) :
         _maxChannelDataAge = json_object_get_int(value);
         print(LOG_VERBOSE, "GlobalOptions: maxChannelDataAge %d", _maxChannelDataAge);
     } // else stay with default (1h)
+
+	if (json_object_object_get_ex(jo, "initialDelay", &value)) {
+		_initialDelay = json_object_get_int(value);
+		print(LOG_VERBOSE, "GlobalOptions: initialDelay %d", _initialDelay);
+	} // else stay with default (15s)
 
 }
 

@@ -19,12 +19,13 @@ enum LogVerbosity {
 
 class GlobalOptions {
 public:
-	GlobalOptions() : _port(8082), _verbosity(LOG_ERROR) {};
+	GlobalOptions() : _port(8082), _verbosity(LOG_ERROR), _maxChannelDataAge(60*60), _initialDelay(15) {};
 	GlobalOptions( struct json_object *jo); // init from json object
 
 	int _port; // http port to listen to data for
 	LogVerbosity _verbosity;
 	int _maxChannelDataAge; // ChannelData older than that will be removed (secs)
+	int _initialDelay; // initial delay before checking the first rules (secs)
 };
 
 extern class GlobalOptions *gGlobalOptions;

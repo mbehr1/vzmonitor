@@ -309,6 +309,8 @@ int main(int argc, char *argv[]) {
 	}
 	assert(gGlobalOptions);
 
+	int initialDelay = gGlobalOptions->_initialDelay;
+
 	// start webserver to listen for data:
 	httpd_handle = MHD_start_daemon( 
 		MHD_USE_SELECT_INTERNALLY, // MHD_USE_THREAD_PER_CONNECTION,
@@ -322,22 +324,26 @@ int main(int argc, char *argv[]) {
 	print(LOG_INFO, "listening on port %d", gGlobalOptions->_port);
 
 	while(!gStop) {
-		pthread_mutex_lock(&gChannelDataMutex);
+		if (initialDelay<=0){
+			pthread_mutex_lock(&gChannelDataMutex);
 
-		// remove old data first:
-		removeOldChannelData(f_now()-(gGlobalOptions->_maxChannelDataAge));
+			// remove old data first:
+			removeOldChannelData(f_now()-(gGlobalOptions->_maxChannelDataAge));
 
-		// check rules
-		List_ShPtrRule::const_iterator it = gRules.cbegin();
+			// check rules
+			List_ShPtrRule::const_iterator it = gRules.cbegin();
 
-		for (; it!=gRules.cend(); ++it){
-			Rule *r = (*it).get();
-			if (r){
-				r->check();
+			for (; it!=gRules.cend(); ++it){
+				Rule *r = (*it).get();
+				if (r){
+					r->check();
+				}
 			}
-		}
 
-		pthread_mutex_unlock(&gChannelDataMutex);
+			pthread_mutex_unlock(&gChannelDataMutex);
+		} else {
+			--initialDelay;
+		}
 		// wait a bit:
 		sleep(1);
 	}
