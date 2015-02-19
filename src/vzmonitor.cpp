@@ -17,6 +17,7 @@
 
 
 #include <stdio.h>
+#include <cstdlib>
 #include <string.h>
 #include <unistd.h>
 #include <signal.h>
@@ -349,6 +350,14 @@ int main(int argc, char *argv[]) {
 		watchdog_secs = 0;
 		print(LOG_INFO, "systemd watchdog disabled");
 	}
+#else
+	// try to read from env:
+	char *strval = getenv("WATCHDOG_USEC");
+	if (strval) {
+		uint64_t wdusec = 0;
+		wdusec = atoll(strval);
+		watchdog_secs = wdusec / 2e6;
+	}
 #endif
 	int next_watchdog = 0;
 	if (watchdog_secs > 0) {
@@ -391,8 +400,17 @@ int main(int argc, char *argv[]) {
 		}
 #endif
 	}
+#ifdef HAVE_SD_DAEMON_H
+	// ping watchdog
+	sd_notify(0, "WATCHDOG=1");
+#endif
 
 	MHD_stop_daemon(httpd_handle);
+
+#ifdef HAVE_SD_DAEMON_H
+	// ping watchdog
+	sd_notify(0, "WATCHDOG=1");
+#endif
 
 	print(LOG_INFO, "stopped listening" );
 
