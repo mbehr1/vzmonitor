@@ -59,6 +59,8 @@ Preferraby (optional) install libsystemd-daemon-dev to have support for systemd 
 sudo apt-get install libsystemd-daemon-dev
 ```
 
+Have libmicrohttpd and libjson-c >= 0.12 installed (todo add howto/example)
+
 ```
 cd vzmonitor
 mkdir build
