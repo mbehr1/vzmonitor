@@ -27,6 +27,11 @@ endif()
 include_directories(${CMAKE_SOURCE_DIR})
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
 
+include (CheckIncludeFiles)
+CHECK_INCLUDE_FILES( "systemd/sd-daemon.h" HAVE_SD_DAEMON_H)
+include (CheckFunctionExists)
+CHECK_FUNCTION_EXISTS( sd_watchdog_enabled HAVE_SD_WATCHDOG_ENABLED)
+
 add_definitions(-DHAVE_CONFIG_HPP)
 myconfigure_file(
   ${CMAKE_CURRENT_SOURCE_DIR}/config.hpp.in

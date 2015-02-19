@@ -20,6 +20,10 @@ set(vzmonitor_srcs
 add_executable(vzmonitor ${vzmonitor_srcs})
 target_link_libraries(vzmonitor ${JSON_LIBRARY} ${MICROHTTPD_LIBRARY} ${GNUTLS_LIBRARIES} pthread m dl)
 
+if (HAVE_SD_DAEMON_H)
+target_link_libraries(vzmonitor systemd-daemon)
+endif()
+
 INSTALL(PROGRAMS
   ${CMAKE_CURRENT_BINARY_DIR}/vzmonitor
   DESTINATION bin)

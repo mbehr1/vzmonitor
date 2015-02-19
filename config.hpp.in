@@ -7,4 +7,7 @@
 /* Define to the home page for this package. */
 #define PACKAGE_URL "https://github.com/mbehr1/vzmonitor"
 
+#cmakedefine HAVE_SD_DAEMON_H
+#cmakedefine HAVE_SD_WATCHDOG_ENABLED
+
 #endif /* _config_hpp_in_ */

@@ -28,7 +28,13 @@
 #include <json-c/json.h>
 
 #include <microhttpd.h>
+
 #include "config.hpp"
+
+#ifdef HAVE_SD_DAEMON_H
+#include <systemd/sd-daemon.h> // for sd_notify needs package libsystemd-daemon-dev
+#endif
+
 #include "gitSha1.h"
 
 #include "config_options.hpp"
@@ -270,17 +276,26 @@ int main(int argc, char *argv[]) {
 
 	struct MHD_Daemon *httpd_handle = NULL;
 	std::string config_file ("../etc/vzmonitor.conf");
+	int watchdog_secs = 0;
 
 	int c;
-	while ( (c = getopt(argc, argv, "c:hV"))!=-1) {
+	while ( (c = getopt(argc, argv, "c:hVw:"))!=-1) {
 		switch (c) {
 		case 'V':
 			printf("%s version %s\n", PACKAGE, g_GIT_SHALONG);
 			return 0;
 		break;
-		case 'c': /* config file */
+		case 'c': // config file
 			config_file = optarg;
 		break;
+		case 'w': // watchdog seconds
+#ifdef HAVE_SD_DAEMON_H
+			watchdog_secs = atoi(optarg);
+#else
+			print(LOG_ERROR, "watchdog set but not compiled with systemd-watchdog support!");
+			return 0;
+#endif
+			break;
 		case '?':
 		case 'h':
 		default:
@@ -323,6 +338,26 @@ int main(int argc, char *argv[]) {
 
 	print(LOG_INFO, "listening on port %d", gGlobalOptions->_port);
 
+#ifdef HAVE_SD_DAEMON_H
+	sd_notify(0, "READY=1");
+#ifdef HAVE_SD_WATCHDOG_ENABLED
+	// here we ignore any given parameter on purpose
+	uint64_t wdusec = 0;
+	if (sd_watchdog_enabled(0, &wdusec)>0) {
+		watchdog_secs = wdusec / 2e6;
+	} else {
+		watchdog_secs = 0;
+		print(LOG_INFO, "systemd watchdog disabled");
+	}
+#endif
+	int next_watchdog = 0;
+	if (watchdog_secs > 0) {
+		print(LOG_INFO, "pinging systemd watchdog each %d secs", watchdog_secs );
+	}
+#else
+	(void) watchdog_secs; // avoid unused var. compiler warning
+#endif
+
 	while(!gStop) {
 		if (initialDelay<=0){
 			pthread_mutex_lock(&gChannelDataMutex);
@@ -346,6 +381,15 @@ int main(int argc, char *argv[]) {
 		}
 		// wait a bit:
 		sleep(1);
+#ifdef HAVE_SD_DAEMON_H
+		// ping watchdog?
+		if (watchdog_secs > 0) {
+			if ((++next_watchdog) >= watchdog_secs) {
+				sd_notify(0, "WATCHDOG=1");
+				next_watchdog = 0;
+			}
+		}
+#endif
 	}
 
 	MHD_stop_daemon(httpd_handle);
